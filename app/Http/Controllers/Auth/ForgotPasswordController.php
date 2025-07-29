@@ -124,7 +124,7 @@ class ForgotPasswordController extends Controller
             // Clear rate limiter on successful send
             $this->clearAttempts($request);
 
-            return back()->with('status', self::SUCCESS_LINK_SENT);
+            return back()->with('success', self::SUCCESS_LINK_SENT);
         }
 
         // Handle different error statuses

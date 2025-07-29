@@ -60,13 +60,12 @@ class AdminController extends Controller
             Log::info('Comment deleted by admin', ['comment_id' => $id]);
 
             return redirect()->route('admin.komentar.index')
-                           ->with('success', 'Komentar berhasil dihapus!');
-
+                ->with('success', 'Komentar berhasil dihapus!');
         } catch (\Exception $e) {
             Log::error('Failed to delete comment', ['comment_id' => $id, 'error' => $e->getMessage()]);
 
             return redirect()->back()
-                           ->with('error', 'Gagal menghapus komentar. Silakan coba lagi.');
+                ->with('error', 'Gagal menghapus komentar. Silakan coba lagi.');
         }
     }
 
@@ -90,6 +89,8 @@ class AdminController extends Controller
 
             $avatarPath = $this->handleAvatarUpload($request);
 
+            $tipe = $request->input('role') === 'admin' ? 'Admin' : 'User';
+
             User::create([
                 'name' => $validatedData['name'],
                 'email' => $validatedData['email'],
@@ -102,18 +103,24 @@ class AdminController extends Controller
 
             DB::commit();
 
-            Log::info('New user created', ['email' => $validatedData['email'], 'role' => $validatedData['role']]);
+            Log::info('New user created', [
+                'email' => $validatedData['email'],
+                'role' => $validatedData['role']
+            ]);
 
             return redirect()->route('admin.dashboard')
-                           ->with('success', 'User berhasil ditambahkan!');
-
+                ->with('success', "{$tipe} berhasil ditambahkan!");
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to create user', ['error' => $e->getMessage()]);
+            Log::error('Failed to create user', [
+                'error' => $e->getMessage()
+            ]);
+
+            $tipe = $request->input('role') === 'admin' ? 'Admin' : 'User';
 
             return redirect()->back()
-                           ->with('error', 'Gagal menambahkan user. Silakan coba lagi.')
-                           ->withInput();
+                ->with('error', "Gagal menambahkan {$tipe}. Silakan coba lagi.")
+                ->withInput();
         }
     }
 
@@ -124,7 +131,7 @@ class AdminController extends Controller
     {
         if ($this->isProtectedUser($user)) {
             return redirect()->back()
-                           ->with('error', 'Tidak dapat menghapus admin atau user yang dilindungi!');
+                ->with('error', 'Tidak dapat menghapus admin atau user yang dilindungi!');
         }
 
         try {
@@ -138,14 +145,13 @@ class AdminController extends Controller
             Log::info('User deleted', ['user_id' => $user->id, 'email' => $user->email]);
 
             return redirect()->route('admin.dashboard')
-                           ->with('success', 'User berhasil dihapus!');
-
+                ->with('success', 'User berhasil dihapus!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to delete user', ['user_id' => $user->id, 'error' => $e->getMessage()]);
 
             return redirect()->back()
-                           ->with('error', 'Gagal menghapus user. Silakan coba lagi.');
+                ->with('error', 'Gagal menghapus user. Silakan coba lagi.');
         }
     }
 
@@ -192,15 +198,14 @@ class AdminController extends Controller
             Log::info('Profile updated', ['user_id' => $admin->id]);
 
             return redirect()->route('admin.profile.show', $admin->id)
-                           ->with('success', 'Profil berhasil diperbarui!');
-
+                ->with('success', 'Profil berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update profile', ['user_id' => $admin->id, 'error' => $e->getMessage()]);
 
             return redirect()->back()
-                           ->with('error', 'Gagal memperbarui profil. Silakan coba lagi.')
-                           ->withInput();
+                ->with('error', 'Gagal memperbarui profil. Silakan coba lagi.')
+                ->withInput();
         }
     }
 
@@ -214,9 +219,9 @@ class AdminController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('role', 'like', "%{$search}%")
-                  ->orWhere('id', $search);
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('role', 'like', "%{$search}%")
+                    ->orWhere('id', $search);
             });
         }
 
@@ -282,7 +287,6 @@ class AdminController extends Controller
                     }
                 }
             }
-
         } catch (\Exception $e) {
             Log::error('Failed to fetch news data for comments', ['error' => $e->getMessage()]);
         }
@@ -397,8 +401,8 @@ class AdminController extends Controller
     private function hasCustomAvatar(User $user): bool
     {
         return $user->avatar_url
-               && strpos($user->avatar_url, '/storage/' . self::AVATAR_STORAGE_PATH . '/') === 0
-               && $user->avatar_url !== self::DEFAULT_AVATAR;
+            && strpos($user->avatar_url, '/storage/' . self::AVATAR_STORAGE_PATH . '/') === 0
+            && $user->avatar_url !== self::DEFAULT_AVATAR;
     }
 
     /**

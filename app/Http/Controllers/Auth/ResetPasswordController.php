@@ -141,7 +141,7 @@ class ResetPasswordController extends Controller
     {
         if ($status === Password::PASSWORD_RESET) {
             $this->logPasswordResetAttempt($email, $status, true);
-            return redirect()->route('login')->with('status', self::SUCCESS_PASSWORD_RESET);
+            return redirect()->route('login')->with('success', self::SUCCESS_PASSWORD_RESET);
         }
 
         $this->logPasswordResetAttempt($email, $status, false);

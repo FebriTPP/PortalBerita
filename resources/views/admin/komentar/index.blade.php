@@ -23,13 +23,6 @@
             {{-- Table --}}
             <div class="card bg-body text-body border-0">
                 <div class="card-body px-0">
-                    @if(session('success'))
-                        <div class="alert alert-success alert-dismissible fade show mx-3" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-body">
                             <thead class="border-bottom border-secondary">

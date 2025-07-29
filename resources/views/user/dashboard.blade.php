@@ -4,13 +4,6 @@
 
 @section('content')
     <div class="container py-5">
-        {{-- Notifikasi Berhasil --}}
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
 
         <div class="row justify-content-center">
             <!-- Sidebar -->
@@ -39,6 +32,20 @@
                                 </a>
                             </li>
                         </ul>
+                        <hr class="border-secondary my-3">
+                        <div class="nav-link" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Hapus akun Anda secara permanen">
+                            <form id="delete-account-form" action="{{ route('user.destroy') }}" method="POST"
+                                class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <a href="#" class="text-danger text-decoration-none"
+                                    onclick="if (confirm('Yakin ingin menghapus akun ini?')) document.getElementById('delete-account-form').submit(); return false;">
+                                    <i class="fas fa-trash me-1"></i> Hapus Akun
+                                </a>
+                            </form>
+                        </div>
+
                     </div>
                 </div>
             </div>

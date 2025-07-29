@@ -83,23 +83,7 @@
                 <!-- Bagian Komentar -->
                 <section id="komentar">
                     <h3 class="mb-4 fw-bold">Komentar</h3>
-
-                    {{-- Tampilkan pesan success --}}
-                    @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    {{-- Tampilkan pesan error --}}
-                    @if (session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
+                    
                     <!-- Form untuk Menulis Komentar -->
                     <div class="card mb-4 bg-body-tertiary border-0">
                         <div class="card-body">

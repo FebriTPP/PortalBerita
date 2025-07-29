@@ -63,15 +63,14 @@ class UserController extends Controller
             Log::info('Profile updated', ['user_id' => $user->id]);
 
             return redirect()->route('user.profile.show')
-                           ->with('success', 'Profil berhasil diperbarui.');
-
+                ->with('success', 'Profil berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Failed to update profile', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
 
             return redirect()->back()
-                           ->with('error', 'Gagal memperbarui profil. Silakan coba lagi.')
-                           ->withInput();
+                ->with('error', 'Gagal memperbarui profil. Silakan coba lagi.')
+                ->withInput();
         }
     }
 
@@ -104,13 +103,12 @@ class UserController extends Controller
             Log::info('Password updated', ['user_id' => Auth::id()]);
 
             return redirect()->route('user.profile.show')
-                           ->with('success', 'Password berhasil diubah!');
-
+                ->with('success', 'Password berhasil diubah!');
         } catch (\Exception $e) {
             Log::error('Failed to update password', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
 
             return redirect()->back()
-                           ->with('error', 'Gagal mengubah password. Silakan coba lagi.');
+                ->with('error', 'Gagal mengubah password. Silakan coba lagi.');
         }
     }
 
@@ -208,7 +206,47 @@ class UserController extends Controller
     private function hasCustomAvatar(User $user): bool
     {
         return $user->avatar_url
-               && strpos($user->avatar_url, '/storage/' . self::AVATAR_STORAGE_PATH . '/') === 0
-               && $user->avatar_url !== self::DEFAULT_AVATAR;
+            && strpos($user->avatar_url, '/storage/' . self::AVATAR_STORAGE_PATH . '/') === 0
+            && $user->avatar_url !== self::DEFAULT_AVATAR;
     }
+
+    /**
+     * Delete authenticated user's account
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        try {
+            DB::transaction(function () use ($user) {
+                // Hapus data yang berkaitan (komentar)
+                Comment::where('user_id', $user->id)->delete();
+
+                // Hapus avatar jika ada
+                $this->removeUserAvatar($user);
+
+                // Alternative: Use model query instead of $user->delete()
+                User::destroy($user->id);
+                // OR
+                // User::where('id', $user->id)->delete();
+            });
+
+            // Logout user dan invalidate session
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            Log::info('User account deleted successfully', ['user_id' => $user->id]);
+
+            return redirect('/')->with('success', 'Akun Anda berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete user account', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()->with('error', 'Gagal menghapus akun.');
+        }
+    }
+
 }

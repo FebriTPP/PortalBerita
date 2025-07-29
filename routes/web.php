@@ -91,6 +91,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('user.profile.show');
     Route::put('/profile/update', [UserController::class, 'updateProfile'])->name('profile.update');
     Route::post('/profile/password', [UserController::class, 'updatePassword'])->name('profile.password');
+    Route::delete('/delete', [UserController::class, 'destroy'])->name('user.destroy');
 });
 
 // =========================
@@ -107,5 +108,3 @@ Route::get('/dashboard', function () {
     }
     return redirect()->route('login');
 })->name('dashboard')->middleware('auth');
-
-
