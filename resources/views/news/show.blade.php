@@ -54,14 +54,18 @@
 
                         <div class="d-flex align-items-center gap-2">
                             <span class="small me-2">Bagikan:</span>
-                            <a href="#" class="btn btn-outline-secondary btn-sm" title="Bagikan ke Facebook"><i
-                                    class="bi bi-facebook"></i></a>
-                            <a href="#" class="btn btn-outline-secondary btn-sm" title="Bagikan ke Twitter"><i
-                                    class="bi bi-twitter-x"></i></a>
-                            <a href="#" class="btn btn-outline-secondary btn-sm" title="Bagikan ke WhatsApp"><i
-                                    class="bi bi-whatsapp"></i></a>
-                            <a href="#" class="btn btn-outline-secondary btn-sm" title="Salin Tautan"><i
-                                    class="bi bi-link-45deg"></i></a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(url()->current()) }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Bagikan ke Facebook">
+                                <i class="bi bi-facebook"></i>
+                            </a>
+                            <a href="https://twitter.com/intent/tweet?url={{ urlencode(url()->current()) }}&text={{ urlencode($news['judul'] ?? 'Berita Menarik') }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Bagikan ke Twitter">
+                                <i class="bi bi-twitter"></i>
+                            </a>
+                            <a href="https://api.whatsapp.com/send?text={{ urlencode($news['judul'] ?? 'Berita Menarik') }}%20{{ urlencode(url()->current()) }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="Bagikan ke WhatsApp">
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm" title="Salin Tautan" onclick="navigator.clipboard.writeText('{{ url()->current() }}'); alert('Tautan disalin ke clipboard!');">
+                                <i class="bi bi-link-45deg"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -83,7 +87,7 @@
                 <!-- Bagian Komentar -->
                 <section id="komentar">
                     <h3 class="mb-4 fw-bold">Komentar</h3>
-                    
+
                     <!-- Form untuk Menulis Komentar -->
                     <div class="card mb-4 bg-body-tertiary border-0">
                         <div class="card-body">

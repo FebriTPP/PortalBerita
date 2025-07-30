@@ -43,7 +43,7 @@ class NewsController extends Controller
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
-                
+
                 return null;
             } catch (\Exception $e) {
                 Log::error('API login exception', ['error' => $e->getMessage()]);
@@ -65,7 +65,7 @@ class NewsController extends Controller
             $response = Http::withToken($apiKey)
                 ->timeout(self::HTTP_TIMEOUT)
                 ->get(self::API_BASE_URL . '/publikasi-berita');
-            
+
             if (!$response->successful()) {
                 Log::error('Failed to fetch news', [
                     'status' => $response->status(),
@@ -76,7 +76,7 @@ class NewsController extends Controller
 
             $data = $response->json();
             return is_array($data) ? collect($data) : collect();
-            
+
         } catch (\Exception $e) {
             Log::error('News fetch exception', ['error' => $e->getMessage()]);
             return collect();
@@ -157,6 +157,40 @@ class NewsController extends Controller
             'kategori' => $originalCategory ?? $this->formatCategoryName($kategori),
             'filteredNews' => $filteredNews,
             'availableCategories' => $this->getAvailableCategories($newsCollection)
+        ]);
+    }
+
+    /**
+     * Search news articles based on query
+     */
+    public function search(Request $request): View
+    {
+        $query = $request->input('q');
+
+        if (!$query) {
+            return view('news.search', [
+                'results' => collect(),
+                'query' => $query,
+                'error' => 'Masukkan kata kunci untuk pencarian.'
+            ]);
+        }
+
+        $apiKey = $this->getApiKey();
+        if (!$apiKey) {
+            abort(500, 'API Key tidak ditemukan');
+        }
+
+        $newsCollection = $this->getNewsCollection($apiKey);
+
+        $results = $newsCollection->filter(function ($news) use ($query) {
+            return Str::contains(strtolower($news['judul'] ?? ''), strtolower($query)) ||
+                   Str::contains(strtolower($news['kategori'] ?? ''), strtolower($query)) ||
+                   Str::contains(strtolower($news['penulis'] ?? ''), strtolower($query));
+        });
+
+        return view('news.search', [
+            'results' => $results,
+            'query' => $query
         ]);
     }
 
@@ -244,9 +278,9 @@ class NewsController extends Controller
     private function getOriginalCategoryName(Collection $newsCollection, string $kategoriSlug): ?string
     {
         $filteredNews = $this->filterNewsByCategory($newsCollection, $kategoriSlug);
-        
-        return $filteredNews->isNotEmpty() 
-            ? $filteredNews->first()['kategori'] 
+
+        return $filteredNews->isNotEmpty()
+            ? $filteredNews->first()['kategori']
             : null;
     }
 

@@ -30,6 +30,9 @@ Route::get('/', [NewsController::class, 'index'])->name('news.index');
 Route::get('/berita/{id}', [NewsController::class, 'show'])->name('news.show');
 Route::get('/kategori/{kategori}', [NewsController::class, 'kategori'])->name('news.kategori');
 
+// Search Route
+Route::get('/search', [NewsController::class, 'search'])->name('news.search');
+
 // =========================
 // Authentication Routes
 // =========================
