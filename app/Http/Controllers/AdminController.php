@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Services\Admin\AdminAnalyticsService;
 use App\Services\Admin\AdminCommentService;
 use App\Services\Admin\AdminUserService;
@@ -132,5 +134,111 @@ class AdminController extends Controller
         }
         return redirect()->back()->with('error', $result['message'])->withInput();
     }
+
+    // ====================================================================
+    // QUICK ACTIONS API METHODS
+    // ====================================================================
+
+    /**
+     * Test API connection for Quick Actions
+     */
+    public function testApiConnection(): JsonResponse
+    {
+        try {
+            $start = microtime(true);
+
+            // Clear cache to force fresh API call
+            Cache::forget('winnicode_api_key');
+            Cache::forget('admin_api_health_status');
+
+            // Test API authentication first
+            $newsService = app(\App\Services\NewsService::class);
+            $apiKey = $newsService->getApiKey();
+
+            if (!$apiKey) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to authenticate with API. Please check API credentials in .env file (WINNICODE_API_EMAIL, WINNICODE_API_PASSWORD)'
+                ]);
+            }
+
+            // Get analytics data to test full API flow
+            $apiStatus = $this->analyticsService->getApiHealthStatus();
+            $latency = round((microtime(true) - $start) * 1000, 2);
+
+            return response()->json([
+                'success' => $apiStatus['is_healthy'],
+                'latency' => $apiStatus['latency_ms'] ?? $latency,
+                'status' => $apiStatus['last_status_code'] ?? 'Unknown',
+                'error' => $apiStatus['last_error'] ?? null,
+                'api_key_status' => $apiKey ? 'Valid' : 'Invalid'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Connection test failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Refresh API key for Quick Actions
+     */
+    public function refreshApiKey(): JsonResponse
+    {
+        try {
+            // Clear current API key cache
+            Cache::forget('winnicode_api_key');
+            Cache::forget('admin_api_health_status');
+
+            // Get new API key
+            $newsService = app(\App\Services\NewsService::class);
+            $newApiKey = $newsService->getApiKey();
+
+            if ($newApiKey) {
+                return response()->json([
+                    'success' => true,
+                    'expires_at' => now()->addHour()->format('H:i:s'),
+                    'message' => 'API key refreshed successfully'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to obtain new API key'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get cache status for Quick Actions
+     */
+    public function getCacheStatus(): JsonResponse
+    {
+        try {
+            $analytics = $this->analyticsService->getAnalyticsData();
+            $cacheStats = $analytics['cache_stats'];
+
+            return response()->json([
+                'success' => true,
+                'hit_rate' => $cacheStats['hit_rate'],
+                'total' => $cacheStats['total'],
+                'hits' => $cacheStats['hits'],
+                'misses' => $cacheStats['misses'],
+                'efficiency' => $cacheStats['hit_rate']
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
     /* User & comment helper logic moved to AdminUserService / AdminCommentService */
 }

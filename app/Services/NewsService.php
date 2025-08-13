@@ -15,22 +15,38 @@ class NewsService
     private const HTTP_TIMEOUT = 10; // seconds
     private const RELATED_NEWS_LIMIT = 4;
     private const NEWS_CACHE_DURATION = 60; // seconds cache list berita
-    private const LOGIN_EMAIL = 'dummy@dummy.com';
-    private const LOGIN_PASSWORD = 'dummy';
 
     /**
      * Get cached API key for external news service
      */
     public function getApiKey(): ?string
     {
-        return Cache::remember('winnicode_api_key', self::API_KEY_CACHE_DURATION, function () {
+        $cacheKey = 'winnicode_api_key';
+
+        // Check if already cached
+        if (Cache::has($cacheKey)) {
+            $this->trackCacheMetric('hit', 'api_key');
+            return Cache::get($cacheKey);
+        }
+
+        // Not cached, fetch from API
+        return Cache::remember($cacheKey, self::API_KEY_CACHE_DURATION, function () {
             $this->trackCacheMetric('miss', 'api_key');
+
+            // Check if API credentials are configured
+            $email = env('WINNICODE_API_EMAIL');
+            $password = env('WINNICODE_API_PASSWORD');
+
+            if (!$email || !$password) {
+                Log::error('API credentials not configured. Please set WINNICODE_API_EMAIL and WINNICODE_API_PASSWORD in .env file');
+                return null;
+            }
 
             try {
                 $response = Http::timeout(self::HTTP_TIMEOUT)
                     ->post(self::API_BASE_URL . '/login', [
-                        'email' => self::LOGIN_EMAIL,
-                        'password' => self::LOGIN_PASSWORD
+                        'email' => $email,
+                        'password' => $password
                     ]);
 
                 $this->trackExternalRequest();
@@ -50,9 +66,6 @@ class NewsService
                 Log::error('API login exception', ['error' => $e->getMessage()]);
                 return null;
             }
-        }) ?: Cache::get('winnicode_api_key', function() {
-            $this->trackCacheMetric('hit', 'api_key');
-            return null;
         });
     }
 
@@ -65,7 +78,16 @@ class NewsService
             return collect();
         }
 
-        return Cache::remember('winnicode_news_collection', self::NEWS_CACHE_DURATION, function () use ($apiKey) {
+        $cacheKey = 'winnicode_news_collection';
+
+        // Check if already cached
+        if (Cache::has($cacheKey)) {
+            $this->trackCacheMetric('hit', 'news_collection');
+            return Cache::get($cacheKey, collect());
+        }
+
+        // Not cached, fetch from API
+        return Cache::remember($cacheKey, self::NEWS_CACHE_DURATION, function () use ($apiKey) {
             $this->trackCacheMetric('miss', 'news_collection');
 
             try {
@@ -94,10 +116,7 @@ class NewsService
                 Log::error('News fetch exception', ['error' => $e->getMessage()]);
                 return collect();
             }
-        }) ?: (function() {
-            $this->trackCacheMetric('hit', 'news_collection');
-            return Cache::get('winnicode_news_collection', collect());
-        })();
+        });
     }
 
     /**
@@ -161,7 +180,7 @@ class NewsService
     private function trackCacheMetric(string $type, string $key = 'general'): void
     {
         $today = now()->format('Y-m-d');
-        $cacheKey = "cache_{$type}s_{$today}";
+        $cacheKey = "cache_{$type}_{$today}";
         $current = Cache::get($cacheKey, 0);
         Cache::put($cacheKey, $current + 1, now()->addDay());
     }

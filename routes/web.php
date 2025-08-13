@@ -83,6 +83,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Comment Management
     Route::get('/komentar', [AdminController::class, 'komentarManajemen'])->name('admin.komentar.index');
     Route::delete('/komentar/{id}', [AdminController::class, 'destroyComment'])->name('admin.komentar.destroy');
+
+    // Admin API Routes for Quick Actions
+    Route::post('/api/test-connection', [AdminController::class, 'testApiConnection'])->name('admin.api.test');
+    Route::post('/api/refresh-key', [AdminController::class, 'refreshApiKey'])->name('admin.api.refresh');
+    Route::post('/api/cache-status', [AdminController::class, 'getCacheStatus'])->name('admin.api.cache');
+
 });
 
 // =========================

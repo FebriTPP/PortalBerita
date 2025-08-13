@@ -56,17 +56,34 @@
                 </div>
 
                 <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card border-0 h-100 bg-warning-subtle">
+                    <div class="card border-0 h-100 @if(isset($apiStatus['rate_limit_remaining']) && $apiStatus['rate_limit_remaining'] < 50) bg-danger-subtle @elseif(isset($apiStatus['rate_limit_remaining']) && $apiStatus['rate_limit_remaining'] < 200) bg-warning-subtle @else bg-info-subtle @endif">
                         <div class="card-body text-center">
                             <div class="display-6 mb-2">
-                                <i class="bi bi-hourglass-split text-warning"></i>
+                                @if(isset($apiStatus['rate_limit_remaining']) && $apiStatus['rate_limit_remaining'] < 50)
+                                    <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                                @elseif(isset($apiStatus['rate_limit_remaining']) && $apiStatus['rate_limit_remaining'] < 200)
+                                    <i class="bi bi-hourglass-split text-warning"></i>
+                                @else
+                                    <i class="bi bi-speedometer text-info"></i>
+                                @endif
                             </div>
                             <h6 class="card-title fw-bold">Rate Limit</h6>
                             <p class="card-text small mb-0">
                                 @if($apiStatus['rate_limit_remaining'])
-                                    <span class="fw-bold">{{ $apiStatus['rate_limit_remaining'] }}</span> tersisa
+                                    <span class="fw-bold @if($apiStatus['rate_limit_remaining'] < 50) text-danger @elseif($apiStatus['rate_limit_remaining'] < 200) text-warning @else text-info @endif">
+                                        {{ $apiStatus['rate_limit_remaining'] }}
+                                    </span>
+                                    @if($apiStatus['rate_limit_total'])
+                                        <span class="text-muted">/ {{ $apiStatus['rate_limit_total'] }}</span>
+                                    @endif
+                                    <span class="text-muted d-block">tersisa</span>
+                                    @if($apiStatus['rate_limit_reset_time'])
+                                        <small class="text-muted">Reset: {{ $apiStatus['rate_limit_reset_time'] }}</small>
+                                    @endif
                                 @else
-                                    <span class="text-muted">N/A</span>
+                                    <span class="fw-bold">{{ $apiStatus['calls_today'] ?? 0 }}</span>
+                                    {{-- <span class="text-muted d-block">panggilan hari ini</span> --}}
+                                    {{-- <small class="text-muted">No limit detected</small> --}}
                                 @endif
                             </p>
                         </div>
@@ -88,6 +105,66 @@
                 </div>
             </div>
 
+            {{-- Quick Actions for Admin --}}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0">
+                        <div class="card-header bg-body border-0">
+                            <h5 class="card-title mb-0 fw-bold">
+                                <i class="bi bi-lightning-charge me-2"></i>Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-lg-4 col-md-6">
+                                    <button type="button" class="btn btn-outline-primary w-100 p-3" id="testApiBtn">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-wifi fs-4 me-3"></i>
+                                            <div class="text-start">
+                                                <div class="fw-bold">Tes API</div>
+                                                <small class="text-muted">Cek koneksi API real-time</small>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-lg-4 col-md-6">
+                                    <button type="button" class="btn btn-outline-warning w-100 p-3" id="refreshApiKeyBtn">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-key fs-4 me-3"></i>
+                                            <div class="text-start">
+                                                <div class="fw-bold">Perbarui API Key</div>
+                                                <small class="text-muted">Refresh token autentikasi</small>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-lg-4 col-md-6">
+                                    <button type="button" class="btn btn-outline-success w-100 p-3" id="checkCacheBtn">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-hdd-stack fs-4 me-3"></i>
+                                            <div class="text-start">
+                                                <div class="fw-bold">Cek Status Cache</div>
+                                                <small class="text-muted">Analisis performa cache</small>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Action Results Display --}}
+                            <div id="actionResults" class="mt-3" style="display: none;">
+                                <div class="alert alert-info" id="actionAlert">
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm me-2" id="actionSpinner"></div>
+                                        <span id="actionMessage">Processing...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- API Status Detail --}}
             <div class="row mb-4">
                 <div class="col-12">
@@ -97,7 +174,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <small class="text-muted d-block">Status Code Terakhir</small>
                                     @if($apiStatus['last_status_code'])
                                         <span class="badge @if($apiStatus['last_status_code'] == 200) bg-success @else bg-danger @endif">
@@ -107,7 +184,7 @@
                                         <span class="text-muted">-</span>
                                     @endif
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <small class="text-muted d-block">API Key Kedaluwarsa</small>
                                     @if($apiStatus['api_key_expires_at'])
                                         <span class="fw-semibold">{{ $apiStatus['api_key_expires_at'] }}</span>
@@ -115,7 +192,20 @@
                                         <span class="text-muted">Auto-refresh</span>
                                     @endif
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Rate Limit Status</small>
+                                    @if($apiStatus['rate_limit_remaining'])
+                                        <span class="fw-semibold @if($apiStatus['rate_limit_remaining'] < 50) text-danger @elseif($apiStatus['rate_limit_remaining'] < 200) text-warning @else text-success @endif">
+                                            {{ $apiStatus['rate_limit_remaining'] }}@if($apiStatus['rate_limit_total'])/{{ $apiStatus['rate_limit_total'] }}@endif
+                                        </span>
+                                        @if($apiStatus['rate_limit_reset_time'])
+                                            <small class="text-muted d-block">Reset: {{ $apiStatus['rate_limit_reset_time'] }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">{{ $apiStatus['calls_today'] ?? 0 }} calls today</span>
+                                    @endif
+                                </div>
+                                <div class="col-md-3">
                                     <small class="text-muted d-block">Terakhir Dicek</small>
                                     <span class="fw-semibold">{{ $apiStatus['checked_at'] }}</span>
                                 </div>
@@ -377,80 +467,25 @@
 
     {{-- Chart.js Scripts --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {{-- Set Analytics Data for Admin Dashboard --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const baseChartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 300 },
-                resizeDelay: 100
-            };
-
-            // Cache Performance Doughnut Chart
-            new Chart(document.getElementById('cacheChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cache Hits', 'Cache Misses'],
-                    datasets: [{
-                        data: [{{ $analytics['cache_stats']['hits'] }}, {{ $analytics['cache_stats']['misses'] }}],
-                        backgroundColor: ['#198754', '#dc3545'],
-                        borderWidth: 0
-                    }]
-                },
-                options: Object.assign({}, baseChartOptions, { plugins: { legend: { position: 'bottom' } } })
-            });
-
-            // External Requests Line Chart
-            new Chart(document.getElementById('requestsChart'), {
-                type: 'line',
-                data: {
-                    labels: {!! json_encode($analytics['hourly_requests']['labels']) !!},
-                    datasets: [{
-                        label: 'API Requests',
-                        data: {!! json_encode($analytics['hourly_requests']['data']) !!},
-                        borderColor: '#0d6efd',
-                        backgroundColor: 'rgba(13,110,253,0.15)',
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 2,
-                        pointHoverRadius: 4
-                    }]
-                },
-                options: Object.assign({}, baseChartOptions, {
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                    plugins: { legend: { display: false } }
-                })
-            });
-
-            // Top Categories Bar Chart
-            new Chart(document.getElementById('categoriesChart'), {
-                type: 'bar',
-                data: {
-                    labels: {!! json_encode($analytics['top_categories']['labels']) !!},
-                    datasets: [{
-                        label: 'Hits',
-                        data: {!! json_encode($analytics['top_categories']['data']) !!},
-                        backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#fd7e14'],
-                        borderRadius: 6,
-                        maxBarThickness: 48
-                    }]
-                },
-                options: Object.assign({}, baseChartOptions, {
-                    scales: { y: { beginAtZero: true } },
-                    plugins: { legend: { display: false } }
-                })
-            });
-
-            // Debounced resize fix
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    // Charts are responsive; nothing explicit needed
-                }, 120);
-            });
-
-            setTimeout(() => location.reload(), 300000); // Auto refresh 5 menit
-        });
+        // Make analytics data available globally for app.js
+        window.adminAnalyticsData = {
+            cache_stats: {
+                hits: {{ $analytics['cache_stats']['hits'] }},
+                misses: {{ $analytics['cache_stats']['misses'] }}
+            },
+            hourly_requests: {
+                labels: {!! json_encode($analytics['hourly_requests']['labels']) !!},
+                data: {!! json_encode($analytics['hourly_requests']['data']) !!}
+            },
+            top_categories: {
+                labels: {!! json_encode($analytics['top_categories']['labels']) !!},
+                data: {!! json_encode($analytics['top_categories']['data']) !!}
+            }
+        };
     </script>
+
+    {{-- Admin Dashboard will be initialized by app.js automatically --}}
 @endsection
