@@ -81,10 +81,13 @@ class NewsController extends Controller
             return $this->renderEmptyCategoryView($kategori);
         }
 
-    $filteredNews = $this->newsService->filterNewsByCategory($newsCollection, $kategori);
-    $originalCategory = $this->newsService->getOriginalCategoryName($newsCollection, $kategori);
+        $filteredNews = $this->newsService->filterNewsByCategory($newsCollection, $kategori);
+        $originalCategory = $this->newsService->getOriginalCategoryName($newsCollection, $kategori);
 
-        return view('news.kategori', [
+        // Track category access for analytics
+        if ($originalCategory) {
+            $this->newsService->trackCategoryAccess($originalCategory);
+        }        return view('news.kategori', [
             'kategori' => $originalCategory ?? $this->newsService->formatCategoryName($kategori),
             'filteredNews' => $filteredNews,
             'availableCategories' => $this->newsService->getAvailableCategories($newsCollection)

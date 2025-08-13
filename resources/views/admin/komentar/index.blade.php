@@ -6,8 +6,13 @@
         <div class="container">
             {{-- Header & Search --}}
             <div class="row align-items-center mb-4 gy-2">
-                <div class="col-lg-6 col-sm-12">
-                    <h1 class="fw-bold text-body">Manajemen Komentar</h1>
+                <div class="col-lg-6 col-sm-12 d-flex align-items-center gap-2 flex-wrap">
+                    @if(auth()->check())
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary order-0">
+                            <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
+                        </a>
+                    @endif
+                    <h1 class="fw-bold text-body mb-0 order-1">Manajemen Komentar</h1>
                 </div>
                 <div class="col-lg-6 col-sm-12 d-flex justify-content-lg-end flex-wrap gap-2">
                     <form method="GET" class="d-flex gap-2" action="">

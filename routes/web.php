@@ -77,7 +77,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::delete('/delete-user/{user}', [AdminController::class, 'deleteUser'])->name('admin.delete-user');
 
     // Profile Management
-    Route::get('/profile/{id}', [AdminController::class, 'showProfile'])->name('admin.profile.show');
     Route::get('/profile/{id}/edit', [AdminController::class, 'editProfile'])->name('admin.profile.edit');
     Route::put('/profile/{id}', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
 

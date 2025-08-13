@@ -24,12 +24,16 @@ class NewsService
     public function getApiKey(): ?string
     {
         return Cache::remember('winnicode_api_key', self::API_KEY_CACHE_DURATION, function () {
+            $this->trackCacheMetric('miss', 'api_key');
+
             try {
                 $response = Http::timeout(self::HTTP_TIMEOUT)
                     ->post(self::API_BASE_URL . '/login', [
                         'email' => self::LOGIN_EMAIL,
                         'password' => self::LOGIN_PASSWORD
                     ]);
+
+                $this->trackExternalRequest();
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -46,6 +50,9 @@ class NewsService
                 Log::error('API login exception', ['error' => $e->getMessage()]);
                 return null;
             }
+        }) ?: Cache::get('winnicode_api_key', function() {
+            $this->trackCacheMetric('hit', 'api_key');
+            return null;
         });
     }
 
@@ -59,12 +66,17 @@ class NewsService
         }
 
         return Cache::remember('winnicode_news_collection', self::NEWS_CACHE_DURATION, function () use ($apiKey) {
+            $this->trackCacheMetric('miss', 'news_collection');
+
             try {
                 $response = Http::withToken($apiKey)
                     ->timeout(self::HTTP_TIMEOUT)
                     ->get(self::API_BASE_URL . '/publikasi-berita');
 
+                $this->trackExternalRequest();
+
                 if (!$response->successful()) {
+                    $this->trackApiError();
                     Log::error('Failed to fetch news', [
                         'status' => $response->status(),
                         'response' => $response->body()
@@ -82,7 +94,10 @@ class NewsService
                 Log::error('News fetch exception', ['error' => $e->getMessage()]);
                 return collect();
             }
-        });
+        }) ?: (function() {
+            $this->trackCacheMetric('hit', 'news_collection');
+            return Cache::get('winnicode_news_collection', collect());
+        })();
     }
 
     /**
@@ -138,5 +153,56 @@ class NewsService
             $penulis = strtolower($news['penulis'] ?? '');
             return Str::contains($judul, $q) || Str::contains($kategori, $q) || Str::contains($penulis, $q);
         })->values();
+    }
+
+    /**
+     * Track cache metrics for analytics
+     */
+    private function trackCacheMetric(string $type, string $key = 'general'): void
+    {
+        $today = now()->format('Y-m-d');
+        $cacheKey = "cache_{$type}s_{$today}";
+        $current = Cache::get($cacheKey, 0);
+        Cache::put($cacheKey, $current + 1, now()->addDay());
+    }
+
+    /**
+     * Track external API requests for analytics
+     */
+    private function trackExternalRequest(): void
+    {
+        $today = now()->format('Y-m-d');
+        $hour = now()->format('Y-m-d-H');
+
+        // Daily counter
+        $dailyKey = "external_requests_{$today}";
+        $dailyCount = Cache::get($dailyKey, 0);
+        Cache::put($dailyKey, $dailyCount + 1, now()->addDay());
+
+        // Hourly counter
+        $hourlyKey = "api_requests_{$hour}";
+        $hourlyCount = Cache::get($hourlyKey, 0);
+        Cache::put($hourlyKey, $hourlyCount + 1, now()->addHour());
+    }
+
+    /**
+     * Track category access for analytics
+     */
+    public function trackCategoryAccess(string $category): void
+    {
+        $cacheKey = 'category_hits_' . strtolower($category);
+        $current = Cache::get($cacheKey, 0);
+        Cache::put($cacheKey, $current + 1, now()->addWeek());
+    }
+
+    /**
+     * Track API errors for monitoring
+     */
+    private function trackApiError(): void
+    {
+        $hour = now()->format('Y-m-d-H');
+        $hourlyKey = "api_errors_{$hour}";
+        $current = Cache::get($hourlyKey, 0);
+        Cache::put($hourlyKey, $current + 1, now()->addDay());
     }
 }
