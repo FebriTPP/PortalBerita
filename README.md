@@ -139,3 +139,7 @@ Portal berita modern menggunakan Laravel 11 dan Vite build system.
     ```bash
     php artisan storage:link
     ```
+    **Tambahkan di .env untuk Cache**:
+    ```bash
+    CACHE_DRIVER=database
+    ```
