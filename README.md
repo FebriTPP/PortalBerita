@@ -84,9 +84,11 @@ Portal berita modern menggunakan Laravel 11 dan Vite build system.
 
     **Penggunaan API Winnicode di '.env':**
 
+    Tambahkan API key ke file `.env`:
+    
     ```env
-    WINNICODE_API_EMAIL=dummy@dummy.com
-    WINNICODE_API_PASSWORD=dummy
+    WINNICODE_API_EMAIL=
+    WINNICODE_API_PASSWORD=
     ```
 
 4. **Migrasi Database**:
