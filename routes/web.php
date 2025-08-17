@@ -77,13 +77,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::delete('/delete-user/{user}', [AdminController::class, 'deleteUser'])->name('admin.delete-user');
 
     // Profile Management
-    Route::get('/profile/{id}', [AdminController::class, 'showProfile'])->name('admin.profile.show');
     Route::get('/profile/{id}/edit', [AdminController::class, 'editProfile'])->name('admin.profile.edit');
     Route::put('/profile/{id}', [AdminController::class, 'updateProfile'])->name('admin.profile.update');
 
     // Comment Management
     Route::get('/komentar', [AdminController::class, 'komentarManajemen'])->name('admin.komentar.index');
     Route::delete('/komentar/{id}', [AdminController::class, 'destroyComment'])->name('admin.komentar.destroy');
+
+    // Admin API Routes for Quick Actions
+    Route::post('/api/test-connection', [AdminController::class, 'testApiConnection'])->name('admin.api.test');
+    Route::post('/api/refresh-key', [AdminController::class, 'refreshApiKey'])->name('admin.api.refresh');
+    Route::post('/api/cache-status', [AdminController::class, 'getCacheStatus'])->name('admin.api.cache');
+
 });
 
 // =========================

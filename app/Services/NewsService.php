@@ -15,21 +15,41 @@ class NewsService
     private const HTTP_TIMEOUT = 10; // seconds
     private const RELATED_NEWS_LIMIT = 4;
     private const NEWS_CACHE_DURATION = 60; // seconds cache list berita
-    private const LOGIN_EMAIL = 'dummy@dummy.com';
-    private const LOGIN_PASSWORD = 'dummy';
 
     /**
      * Get cached API key for external news service
      */
     public function getApiKey(): ?string
     {
-        return Cache::remember('winnicode_api_key', self::API_KEY_CACHE_DURATION, function () {
+        $cacheKey = 'winnicode_api_key';
+
+        // Check if already cached
+        if (Cache::has($cacheKey)) {
+            $this->trackCacheMetric('hit', 'api_key');
+            return Cache::get($cacheKey);
+        }
+
+        // Not cached, fetch from API
+        return Cache::remember($cacheKey, self::API_KEY_CACHE_DURATION, function () {
+            $this->trackCacheMetric('miss', 'api_key');
+
+            // Check if API credentials are configured
+            $email = env('WINNICODE_API_EMAIL');
+            $password = env('WINNICODE_API_PASSWORD');
+
+            if (!$email || !$password) {
+                Log::error('API credentials not configured. Please set WINNICODE_API_EMAIL and WINNICODE_API_PASSWORD in .env file');
+                return null;
+            }
+
             try {
                 $response = Http::timeout(self::HTTP_TIMEOUT)
                     ->post(self::API_BASE_URL . '/login', [
-                        'email' => self::LOGIN_EMAIL,
-                        'password' => self::LOGIN_PASSWORD
+                        'email' => $email,
+                        'password' => $password
                     ]);
+
+                $this->trackExternalRequest();
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -58,13 +78,27 @@ class NewsService
             return collect();
         }
 
-        return Cache::remember('winnicode_news_collection', self::NEWS_CACHE_DURATION, function () use ($apiKey) {
+        $cacheKey = 'winnicode_news_collection';
+
+        // Check if already cached
+        if (Cache::has($cacheKey)) {
+            $this->trackCacheMetric('hit', 'news_collection');
+            return Cache::get($cacheKey, collect());
+        }
+
+        // Not cached, fetch from API
+        return Cache::remember($cacheKey, self::NEWS_CACHE_DURATION, function () use ($apiKey) {
+            $this->trackCacheMetric('miss', 'news_collection');
+
             try {
                 $response = Http::withToken($apiKey)
                     ->timeout(self::HTTP_TIMEOUT)
                     ->get(self::API_BASE_URL . '/publikasi-berita');
 
+                $this->trackExternalRequest();
+
                 if (!$response->successful()) {
+                    $this->trackApiError();
                     Log::error('Failed to fetch news', [
                         'status' => $response->status(),
                         'response' => $response->body()
@@ -138,5 +172,56 @@ class NewsService
             $penulis = strtolower($news['penulis'] ?? '');
             return Str::contains($judul, $q) || Str::contains($kategori, $q) || Str::contains($penulis, $q);
         })->values();
+    }
+
+    /**
+     * Track cache metrics for analytics
+     */
+    private function trackCacheMetric(string $type, string $key = 'general'): void
+    {
+        $today = now()->format('Y-m-d');
+        $cacheKey = "cache_{$type}_{$today}";
+        $current = Cache::get($cacheKey, 0);
+        Cache::put($cacheKey, $current + 1, now()->addDay());
+    }
+
+    /**
+     * Track external API requests for analytics
+     */
+    private function trackExternalRequest(): void
+    {
+        $today = now()->format('Y-m-d');
+        $hour = now()->format('Y-m-d-H');
+
+        // Daily counter
+        $dailyKey = "external_requests_{$today}";
+        $dailyCount = Cache::get($dailyKey, 0);
+        Cache::put($dailyKey, $dailyCount + 1, now()->addDay());
+
+        // Hourly counter
+        $hourlyKey = "api_requests_{$hour}";
+        $hourlyCount = Cache::get($hourlyKey, 0);
+        Cache::put($hourlyKey, $hourlyCount + 1, now()->addHour());
+    }
+
+    /**
+     * Track category access for analytics
+     */
+    public function trackCategoryAccess(string $category): void
+    {
+        $cacheKey = 'category_hits_' . strtolower($category);
+        $current = Cache::get($cacheKey, 0);
+        Cache::put($cacheKey, $current + 1, now()->addWeek());
+    }
+
+    /**
+     * Track API errors for monitoring
+     */
+    private function trackApiError(): void
+    {
+        $hour = now()->format('Y-m-d-H');
+        $hourlyKey = "api_errors_{$hour}";
+        $current = Cache::get($hourlyKey, 0);
+        Cache::put($hourlyKey, $current + 1, now()->addDay());
     }
 }

@@ -10,7 +10,8 @@
             <div class="d-flex align-items-center flex-wrap gap-2">
 
                 {{-- Tombol Pencarian --}}
-                <a href="#" class="btn btn-link text-body-secondary me-2" title="Cari" data-bs-toggle="modal" data-bs-target="#searchModal">
+                <a href="#" class="btn btn-link text-body-secondary me-2" title="Cari" data-bs-toggle="modal"
+                    data-bs-target="#searchModal">
                     <i class="bi bi-search fs-5"></i>
                 </a>
 
@@ -31,27 +32,44 @@
                                 height="36">
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end text-small shadow">
+                            {{-- Header User Info --}}
                             <li class="px-3 py-2 border-bottom">
                                 <div class="fw-bold">{{ Auth::user()->name }}</div>
                                 <div class="text-muted small">{{ Auth::user()->email }}</div>
                             </li>
+
                             @if (Auth::user()->role === 'admin')
-                                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">Dashboard Admin</a></li>
-                                <li><a class="dropdown-item" href="{{ route('admin.profile.edit', Auth::user()->id) }}">Edit Profil</a></li>
+                                {{-- Admin Section --}}
+                                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">📊 Dashboard Admin</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{{ route('admin.profile.edit', Auth::user()->id) }}">✏️
+                                        Edit Profil</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.komentar.index') }}">🗨️ Moderasi
+                                        Komentar</a></li>
+                                <li><a class="dropdown-item" href="{{ route('admin.profile.create') }}">➕ Tambah User</a>
+                                </li>
                             @else
-                                <li><a class="dropdown-item" href="{{ route('user.profile.show') }}">Profil Saya</a></li>
+                                {{-- User Section --}}
+                                <li><a class="dropdown-item" href="{{ route('user.profile.show') }}">👤 Profil Saya</a>
+                                </li>
                             @endif
-                            <li><hr class="dropdown-divider"></li>
+
                             <li>
-                                <a class="dropdown-item" href="{{ route('logout') }}"
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            {{-- Logout --}}
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ route('logout') }}"
                                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                    Logout
+                                    🚪 Logout
                                 </a>
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf
                                 </form>
                             </li>
                         </ul>
+
                     </div>
                 @endguest
 
